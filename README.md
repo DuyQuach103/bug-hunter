@@ -67,6 +67,6 @@ python server.py
 ```
 
 The application will start, and the web interface will be available at:
-**[http://127.0.0.1:5000](http://127.0.0.1:5000)**
+**[http://127.0.0.1:5001](http://127.0.0.1:5001)**
 
 Open this URL in your browser, paste your Python code, and click **Find Bugs**.
