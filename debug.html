@@ -1,0 +1,2124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bug Hunter - AI-Powered Code Debugger</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Prism.js for syntax highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-c.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-cpp.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-go.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-rust.min.js"></script>
+
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-active: #21262d;
+            --border-color: #30363d;
+            --text-primary: #c9d1d9;
+            --text-secondary: #8b949e;
+            --accent-blue: #58a6ff;
+            --accent-green: #238636;
+            --accent-green-hover: #2ea44f;
+            --accent-red: #da3637;
+            --accent-red-border: #f85149;
+            --accent-yellow: #d29922;
+            --accent-yellow-border: #9e6a00;
+            --shadow: 0 8px 24px rgba(0,0,0,0.5);
+            --transition: all 0.2s ease-in-out;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-container svg {
+            color: var(--accent-blue);
+        }
+
+        .logo-container h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(90deg, #58a6ff, #1f6feb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-subtitle {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            background-color: var(--bg-active);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            font-weight: 500;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: row;
+            height: calc(100vh - 65px);
+            overflow: hidden;
+        }
+
+        @media (max-width: 1024px) {
+            body {
+                height: auto;
+                overflow: auto;
+            }
+            main {
+                flex-direction: column;
+                height: auto;
+                overflow: auto;
+            }
+            .editor-section {
+                width: 100% !important;
+                height: 500px;
+            }
+            .splitter {
+                display: none;
+            }
+        }
+
+        .editor-section {
+            width: 50%;
+            min-width: 300px;
+            max-width: 80%;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background-color: var(--bg-primary);
+        }
+
+        /* Draggable Splitter */
+        .splitter {
+            width: 6px;
+            background-color: var(--bg-secondary);
+            border-left: 1px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
+            cursor: col-resize;
+            transition: background-color 0.2s;
+            user-select: none;
+            z-index: 100;
+        }
+
+        .splitter:hover, .splitter.dragging {
+            background-color: var(--accent-blue);
+        }
+
+        .editor-header {
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-title {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .editor-toolbar {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            background-color: var(--bg-active);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.5rem 0.85rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: var(--transition);
+        }
+
+        .btn:hover {
+            background-color: var(--border-color);
+            border-color: var(--text-secondary);
+        }
+
+        .btn-primary {
+            background-color: var(--accent-green);
+            border-color: rgba(240, 246, 252, 0.1);
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--accent-green-hover);
+            border-color: rgba(240, 246, 252, 0.15);
+        }
+
+        .btn-primary:disabled {
+            background-color: #23863680;
+            color: #ffffff80;
+            cursor: not-allowed;
+        }
+
+        .btn-danger {
+            color: var(--accent-red);
+        }
+
+        .btn-danger:hover {
+            background-color: #da36371a;
+            border-color: var(--accent-red-border);
+        }
+
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: row;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .line-numbers {
+            width: 48px;
+            min-width: 48px;
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            color: #8b949e;
+            font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace;
+            font-size: 0.95rem;
+            padding: 1.5rem 0.75rem 1.5rem 0;
+            text-align: right;
+            user-select: none;
+            overflow: hidden;
+            line-height: 1.5;
+            white-space: pre;
+        }
+
+        .code-textarea {
+            flex: 1;
+            width: 100%;
+            min-height: 0;
+            background-color: var(--bg-primary);
+            border: none;
+            color: #e6edf3;
+            font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace;
+            font-size: 0.95rem;
+            padding: 1.5rem 1.5rem 1.5rem 0.75rem;
+            resize: none;
+            overflow: auto;
+            white-space: pre;
+            word-wrap: normal;
+            outline: none;
+            tab-size: 4;
+            line-height: 1.5;
+        }
+
+        .code-textarea::placeholder {
+            color: rgba(139, 148, 158, 0.45);
+            font-style: normal;
+            filter: blur(0.6px);
+            line-height: 1.5;
+        }
+
+        .results-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background-color: var(--bg-secondary);
+            overflow-y: auto;
+        }
+
+        .results-header {
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .results-container {
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            flex: 1;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+            flex: 1;
+        }
+
+        .empty-state svg {
+            margin-bottom: 1rem;
+            color: #30363d;
+            stroke-width: 1.5;
+        }
+
+        .empty-state h3 {
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .loader-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem 2rem;
+            flex: 1;
+        }
+
+        .spinner-wrapper {
+            position: relative;
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .flying-bug {
+            position: absolute;
+            color: var(--accent-blue);
+            animation: fly-around 3.5s ease-in-out infinite;
+            filter: drop-shadow(0 2px 5px rgba(88, 166, 255, 0.4));
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes fly-around {
+            0% {
+                transform: translate(0, -32px) rotate(0deg) scale(1);
+            }
+            24% {
+                transform: translate(24px, -12px) rotate(20deg) scale(0.9);
+            }
+            26% {
+                transform: translate(24px, -12px) rotate(20deg) scale(0.9);
+            }
+            48% {
+                transform: translate(0, 8px) rotate(0deg) scale(1.1);
+            }
+            50% {
+                transform: translate(0, 8px) rotate(0deg) scale(1.1);
+            }
+            74% {
+                transform: translate(-24px, -12px) rotate(-20deg) scale(0.9);
+            }
+            76% {
+                transform: translate(-24px, -12px) rotate(-20deg) scale(0.9);
+            }
+            100% {
+                transform: translate(0, -32px) rotate(0deg) scale(1);
+            }
+        }
+
+        .loader-text {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .loader-dots::after {
+            content: '.';
+            animation: dots 1.5s steps(5, end) infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+
+        .error-banner {
+            background-color: rgba(248, 81, 73, 0.1);
+            border: 1px solid var(--accent-red-border);
+            color: #ff7b72;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            display: none;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .error-banner svg {
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .result-group {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .result-group-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .issue-card {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            transition: var(--transition);
+        }
+
+        .issue-card:hover {
+            border-color: #444c56;
+        }
+
+        .issue-card.error-card {
+            border-left: 4px solid var(--accent-red);
+        }
+
+        .issue-card.warning-card {
+            border-left: 4px solid var(--accent-yellow);
+        }
+
+        .issue-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .issue-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .badge-error {
+            background-color: rgba(248, 81, 73, 0.15);
+            color: #ff7b72;
+            border: 1px solid rgba(248, 81, 73, 0.2);
+        }
+
+        .badge-warning {
+            background-color: rgba(210, 153, 34, 0.15);
+            color: #d29922;
+            border: 1px solid rgba(210, 153, 34, 0.2);
+        }
+
+        .badge-line {
+            background-color: var(--bg-active);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            font-family: 'Fira Code', monospace;
+            text-transform: none;
+        }
+
+        .issue-desc {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            font-weight: 400;
+        }
+
+        .issue-fix-container {
+            margin-top: 0.25rem;
+        }
+
+        .issue-fix-header {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.4rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .issue-fix-code {
+            border-radius: 6px !important;
+            margin: 0 !important;
+            padding: 0.75rem !important;
+            font-size: 0.85rem !important;
+            background-color: #05070a !important;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Strengths & Recommendations lists */
+        .bullet-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .bullet-item {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .bullet-item.strength {
+            border-left: 4px solid var(--accent-green);
+        }
+
+        .bullet-item.strength svg {
+            color: #3fb950;
+            flex-shrink: 0;
+        }
+
+        .bullet-item.recommendation {
+            border-left: 4px solid var(--accent-blue);
+        }
+
+        .bullet-item.recommendation svg {
+            color: var(--accent-blue);
+            flex-shrink: 0;
+        }
+
+        /* Metrics summary styling */
+        .metrics-summary {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        @media (max-width: 600px) {
+            .metrics-summary {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .metric-card {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition);
+        }
+
+        .metric-card:hover {
+            border-color: #444c56;
+        }
+
+        .metric-icon {
+            font-size: 1.5rem;
+            stroke-width: 2;
+            flex-shrink: 0;
+        }
+
+        .metric-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Quality Score Card specific styling */
+        .metric-card.score-card {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+            justify-content: center;
+        }
+
+        .metric-value-container {
+            display: flex;
+            align-items: baseline;
+            gap: 0.1rem;
+        }
+
+        .metric-value-container .metric-value {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .metric-max {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .score-bar-bg {
+            width: 100%;
+            height: 4px;
+            background-color: var(--bg-active);
+            border-radius: 2px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+
+        .score-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #444c56;
+        }
+        /* Split view comparison styling */
+        .comparison-section {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            transition: var(--transition);
+        }
+
+        .comparison-section:hover {
+            border-color: #444c56;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px;
+            background-color: var(--border-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            overflow: hidden;
+            font-family: 'Fira Code', 'SFMono-Regular', Consolas, monospace;
+            font-size: 0.82rem;
+            resize: vertical;
+            height: 350px;
+            min-height: 150px;
+            max-height: 800px;
+        }
+
+        .comparison-grid > div {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+                height: auto;
+                resize: none;
+            }
+            .comparison-grid > div {
+                height: auto;
+            }
+        }
+
+        .diff-pane-header {
+            background-color: var(--bg-secondary);
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .diff-pane {
+            background-color: var(--bg-primary);
+            overflow: auto;
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .diff-line {
+            display: flex;
+            min-height: 20px;
+            line-height: 20px;
+            white-space: pre;
+        }
+
+        .diff-line-number {
+            width: 40px;
+            min-width: 40px;
+            text-align: right;
+            padding-right: 0.75rem;
+            color: #484f58;
+            background-color: var(--bg-secondary);
+            user-select: none;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .diff-line-content {
+            padding-left: 0.75rem;
+            flex: 1;
+        }
+
+        /* Line states */
+        .line-removed {
+            background-color: rgba(248, 81, 73, 0.15);
+            color: #ff7b72;
+        }
+
+        .line-removed .diff-line-content {
+            text-decoration: line-through;
+            opacity: 0.8;
+        }
+
+        .line-added {
+            background-color: rgba(63, 185, 80, 0.15);
+            color: #56d364;
+        }
+
+        .line-empty {
+            background-color: #0d1117;
+            background-image: repeating-linear-gradient(45deg, #161b22, #161b22 10px, #0d1117 10px, #0d1117 20px);
+        }
+
+        .line-empty .diff-line-number {
+            background-color: var(--bg-secondary);
+        }
+
+        /* Diff Legend */
+        .diff-legend {
+            display: flex;
+            gap: 1.5rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+        }
+
+        .legend-dot.removed {
+            background-color: rgba(248, 81, 73, 0.3);
+            border: 1px solid var(--accent-red-border);
+        }
+
+        .legend-dot.added {
+            background-color: rgba(63, 185, 80, 0.3);
+            border: 1px solid #3fb950;
+        }
+
+        /* Action Buttons Sticky Footer */
+        .actions-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            padding: 1rem 0;
+            border-top: 1px solid var(--border-color);
+            margin-top: 1rem;
+        }
+
+        .btn-success {
+            background-color: var(--accent-green);
+            border-color: rgba(240, 246, 252, 0.1);
+            color: #ffffff;
+        }
+
+        .btn-success:hover {
+            background-color: var(--accent-green-hover);
+        }
+
+        /* Language Dropdown Selector Styling */
+        .lang-select {
+            background-color: var(--bg-active);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.35rem 0.6rem;
+            font-size: 0.85rem;
+            font-family: inherit;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .lang-select:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.3);
+        }
+
+        /* File Name Display Styling */
+        .file-name-display {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            max-width: 150px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 0.5rem;
+            margin-right: 0.5rem;
+        }
+
+        /* Drag and Drop Styling */
+        .editor-container {
+            position: relative;
+            border: 2px solid transparent;
+            border-radius: 6px;
+            transition: border-color 0.2s, background-color 0.2s;
+        }
+
+        .editor-container.drag-active {
+            border-color: var(--accent-blue);
+            background-color: rgba(56, 139, 253, 0.05);
+        }
+
+        /* Evaluation Panel Styles */
+        .eval-card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            transition: var(--transition);
+        }
+        .eval-card:hover {
+            border-color: #444c56;
+        }
+        .eval-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .eval-card-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .eval-badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+        }
+        .badge-success {
+            background-color: rgba(35, 134, 54, 0.15);
+            color: #56d364;
+            border: 1px solid rgba(56, 139, 60, 0.4);
+        }
+        .badge-fail {
+            background-color: rgba(248, 81, 73, 0.15);
+            color: #ff7b72;
+            border: 1px solid rgba(248, 81, 73, 0.4);
+        }
+        .eval-details {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border-color);
+            padding-top: 0.5rem;
+            margin-top: 0.25rem;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-container">
+            <a href="/" class="btn" style="padding: 0.35rem 0.6rem; margin-right: 0.5rem; background-color: var(--bg-active);" title="Back to home">
+                <i data-lucide="arrow-left" size="14"></i>
+            </a>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bug"><path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-4.97 0-9-4.03-9-9 0-4.02 3.24-7.3 7.29-7.97Q11 3 12 3q1 0 1.71.03C17.76 3.7 21 6.98 21 11c0 4.97-4.03 9-9 9Z"/><path d="M12 9v11"/><path d="M18.39 8.81 21.6 7"/><path d="M21 11h-3"/><path d="M18.39 13.19 21.6 15"/><path d="M5.61 8.81 2.4 7"/><path d="M3 11h3"/><path d="M5.61 13.19 2.4 15"/></svg>
+            <h1 id="header-title">Bug Hunter</h1>
+            <span class="logo-subtitle" id="header-subtitle">AI Code Debugger</span>
+        </div>
+        <div class="header-actions">
+            <a href="https://github.com" target="_blank" class="btn" style="padding: 0.4rem 0.6rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-github"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
+                GitHub
+            </a>
+        </div>
+    </header>
+
+    <main id="main-container">
+        <!-- Editor Column -->
+        <section class="editor-section" id="editor-pane">
+            <div class="editor-header">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span class="section-title" id="source-code-title">
+                        <i data-lucide="terminal" size="16"></i> Python Source Code
+                    </span>
+                    <select id="language-select" class="lang-select" title="Change programming language">
+                        <option value="Python">Python</option>
+                        <option value="JavaScript">JavaScript</option>
+                        <option value="Java">Java</option>
+                        <option value="C++">C++</option>
+                        <option value="Go">Go</option>
+                        <option value="Rust">Rust</option>
+                        <option value="Plain Text">Plain Text</option>
+                    </select>
+                </div>
+                <div class="editor-toolbar">
+                    <input type="file" id="file-upload" accept=".py,.java,.js,.cpp,.cxx,.cc,.go,.rs,.txt" style="display: none;">
+                    <button class="btn" id="btn-upload" title="Upload a code file">
+                        <i data-lucide="upload" size="15"></i> Upload File
+                    </button>
+                    <span id="file-name-display" class="file-name-display" style="display: none;"></span>
+                    <select id="txt-language-select" class="lang-select" style="display: none; padding: 0.2rem 0.4rem; font-size: 0.8rem; margin-left: 0.25rem;" title="Choose language for text file">
+                        <option value="Python">Python</option>
+                        <option value="JavaScript">JavaScript</option>
+                        <option value="Java">Java</option>
+                        <option value="C++">C++</option>
+                        <option value="Go">Go</option>
+                        <option value="Rust">Rust</option>
+                    </select>
+                    <span id="detected-lang-display" style="font-size: 0.85rem; color: var(--text-secondary); display: none; margin-left: 0.25rem; vertical-align: middle;"></span>
+
+                    <button class="btn btn-danger" id="btn-clear" title="Clear all text and results">
+                        <i data-lucide="trash-2" size="15"></i> Clear
+                    </button>
+                    <button class="btn" id="btn-eval" title="Run full test case evaluation suite">
+                        <i data-lucide="play" size="15"></i> Run Evaluation
+                    </button>
+                    <button class="btn btn-primary" id="btn-find" title="Analyze code using Gemini API">
+                        <i data-lucide="search" size="15"></i> Find Bugs
+                    </button>
+                </div>
+            </div>
+            <div class="editor-container">
+                <div class="line-numbers" id="line-numbers">1</div>
+                <textarea class="code-textarea" id="code-input" placeholder="" spellcheck="false"></textarea>
+            </div>
+        </section>
+
+        <!-- Drag Splitter -->
+        <div class="splitter" id="drag-splitter" title="Drag to resize panes"></div>
+
+        <!-- Results Column -->
+        <section class="results-section" id="results-pane">
+            <div class="results-header">
+                <span class="section-title">
+                    <i data-lucide="activity" size="16"></i> Analysis Report
+                </span>
+            </div>
+            
+            <div class="results-container">
+                <!-- Error Banner -->
+                <div class="error-banner" id="error-banner">
+                    <i data-lucide="alert-octagon" size="18"></i>
+                    <span id="error-message"></span>
+                </div>
+
+                <!-- Empty State -->
+                <div class="empty-state" id="empty-state">
+                    <i data-lucide="shield-alert" size="64"></i>
+                    <h3>No Analysis Run Yet</h3>
+                    <p>Write your own code or leave it empty to analyze the suggested example, then click "Find Bugs" to run the AI analyzer.</p>
+                </div>
+
+                <!-- Loading State -->
+                <div class="loader-container" id="loader">
+                    <div class="spinner-wrapper">
+                        <div class="spinner"></div>
+                        <div class="flying-bug">
+                            <i data-lucide="bug" size="20"></i>
+                        </div>
+                    </div>
+                    <div class="loader-text">Analyzing python script<span class="loader-dots"></span></div>
+                </div>
+
+                <!-- Actual Results Content -->
+                <div id="results-content" style="display: none; display: flex; flex-direction: column; gap: 1.5rem;">
+                    
+                    <!-- Complexity Summary -->
+                    <div class="metrics-summary" id="metrics-summary">
+                        <div class="metric-card">
+                            <i data-lucide="clock" class="metric-icon" style="color: var(--accent-blue);"></i>
+                            <div class="metric-details">
+                                <span class="metric-label">Time Complexity</span>
+                                <span class="metric-value" id="time-complexity-value">N/A</span>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <i data-lucide="database" class="metric-icon" style="color: var(--accent-yellow);"></i>
+                            <div class="metric-details">
+                                <span class="metric-label">Space Complexity</span>
+                                <span class="metric-value" id="space-complexity-value">N/A</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Errors (Syntax & Logic) -->
+                    <div class="result-group" id="group-errors">
+                        <h4 class="result-group-title" style="color: var(--accent-red);">
+                            <i data-lucide="bug" size="16"></i> Errors (Syntax & Logic)
+                        </h4>
+                        <div id="errors-list" class="result-group" style="gap: 0.75rem;">
+                            <!-- Dynamically loaded -->
+                        </div>
+                    </div>
+
+                    <!-- Warnings (Performance & Security) -->
+                    <div class="result-group" id="group-warnings">
+                        <h4 class="result-group-title" style="color: var(--accent-yellow);">
+                            <i data-lucide="alert-triangle" size="16"></i> Warnings (Performance & Security)
+                        </h4>
+                        <div id="warnings-list" class="result-group" style="gap: 0.75rem;">
+                            <!-- Dynamically loaded -->
+                        </div>
+                    </div>
+
+                    <!-- Code Strengths -->
+                    <div class="result-group" id="group-strengths">
+                        <h4 class="result-group-title" style="color: #3fb950;">
+                            <i data-lucide="check-circle-2" size="16"></i> Code Strengths
+                        </h4>
+                        <ul id="strengths-list" class="bullet-list">
+                            <!-- Dynamically loaded -->
+                        </ul>
+                    </div>
+
+                    <!-- Recommendations -->
+                    <div class="result-group" id="group-recommendations">
+                        <h4 class="result-group-title" style="color: var(--accent-blue);">
+                            <i data-lucide="sparkles" size="16"></i> Recommendations
+                        </h4>
+                        <ul id="recommendations-list" class="bullet-list">
+                            <!-- Dynamically loaded -->
+                        </ul>
+                    </div>
+
+                    <!-- Comparison Pane (Original vs Fixed) -->
+                    <div class="result-group" id="group-comparison" style="display: none;">
+                        <h4 class="result-group-title" style="color: var(--accent-blue);">
+                            <i data-lucide="git-compare" size="16"></i> 📊 Comparison (Original vs Fixed)
+                        </h4>
+                        <div class="comparison-section">
+                            <div class="comparison-grid">
+                                <div>
+                                    <div class="diff-pane-header">
+                                        <i data-lucide="file-code" size="14"></i> Original Code
+                                    </div>
+                                    <div class="diff-pane" id="diff-original">
+                                        <!-- Original aligned code lines -->
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="diff-pane-header">
+                                        <i data-lucide="file-check-2" size="14"></i> Fixed Code
+                                    </div>
+                                    <div class="diff-pane" id="diff-fixed">
+                                        <!-- Fixed aligned code lines -->
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="diff-legend" style="margin-top: 0.5rem;">
+                                <div class="legend-item">
+                                    <div class="legend-dot removed"></div>
+                                    <span>Red: removed/replaced lines</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-dot added"></div>
+                                    <span>Green: added/changed lines</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions Footer -->
+                    <div class="actions-footer" id="actions-footer" style="display: none;">
+                        <button class="btn btn-danger" id="btn-reject" title="Reject fix and clear results">
+                            <i data-lucide="x-circle" size="15"></i> Reject
+                        </button>
+                        <button class="btn" id="btn-download" title="Download fixed python script">
+                            <i data-lucide="download" size="15"></i> Download
+                        </button>
+                        <button class="btn btn-success" id="btn-apply" title="Apply the recommended fixes to your editor">
+                            <i data-lucide="check" size="15"></i> Apply Fix
+                        </button>
+                    </div>
+
+                </div>
+
+                <!-- Evaluation Results Content -->
+                <div id="eval-content" style="display: none; flex-direction: column; gap: 1.5rem; width: 100%;">
+                    <div class="metrics-summary">
+                        <div class="metric-card">
+                            <i data-lucide="list-checks" class="metric-icon" style="color: var(--accent-blue);"></i>
+                            <div class="metric-details">
+                                <span class="metric-label">Total Tests</span>
+                                <span class="metric-value" id="eval-total-tests">0</span>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <i data-lucide="check-circle-2" class="metric-icon" style="color: var(--accent-green);"></i>
+                            <div class="metric-details">
+                                <span class="metric-label">Passed Tests</span>
+                                <span class="metric-value" id="eval-passed-tests">0</span>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <i data-lucide="percent" class="metric-icon" style="color: var(--accent-yellow);"></i>
+                            <div class="metric-details">
+                                <span class="metric-label">Pass Rate</span>
+                                <span class="metric-value" id="eval-pass-rate">0%</span>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <i data-lucide="award" class="metric-icon" style="color: #a371f7;"></i>
+                            <div class="metric-details">
+                                <span class="metric-label">Avg Judge Score</span>
+                                <span class="metric-value" id="eval-avg-score">0 / 10</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="eval-details-list" style="display: flex; flex-direction: column; gap: 1rem;">
+                        <!-- Filled dynamically -->
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // DOM elements
+        const codeInput = document.getElementById('code-input');
+        const btnClear = document.getElementById('btn-clear');
+        const btnFind = document.getElementById('btn-find');
+        
+        const emptyState = document.getElementById('empty-state');
+        const loader = document.getElementById('loader');
+        const resultsContent = document.getElementById('results-content');
+        const errorBanner = document.getElementById('error-banner');
+        const errorMessage = document.getElementById('error-message');
+
+        const errorsList = document.getElementById('errors-list');
+        const warningsList = document.getElementById('warnings-list');
+        const strengthsList = document.getElementById('strengths-list');
+        const recommendationsList = document.getElementById('recommendations-list');
+
+        const btnApply = document.getElementById('btn-apply');
+        const btnReject = document.getElementById('btn-reject');
+        const btnDownload = document.getElementById('btn-download');
+        const diffOriginal = document.getElementById('diff-original');
+        const diffFixed = document.getElementById('diff-fixed');
+        const groupComparison = document.getElementById('group-comparison');
+        const actionsFooter = document.getElementById('actions-footer');
+        const mainContainer = document.getElementById('main-container');
+        const editorPane = document.getElementById('editor-pane');
+        const splitter = document.getElementById('drag-splitter');
+        const lineNumbers = document.getElementById('line-numbers');
+
+        // File upload & Language selector elements
+        const fileUpload = document.getElementById('file-upload');
+        const btnUpload = document.getElementById('btn-upload');
+        const fileNameDisplay = document.getElementById('file-name-display');
+        const languageSelect = document.getElementById('language-select');
+        const txtLanguageSelect = document.getElementById('txt-language-select');
+        const detectedLangDisplay = document.getElementById('detected-lang-display');
+
+        // Parse current language from URL query parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const langParam = urlParams.get('lang') || 'python';
+
+        const languageNameMap = {
+            'python': 'Python',
+            'javascript': 'JavaScript',
+            'java': 'Java',
+            'cpp': 'C++',
+            'go': 'Go',
+            'rust': 'Rust',
+            'plain text': 'Plain Text',
+            'plaintext': 'Plain Text'
+        };
+
+        const languageColorMap = {
+            'Python': '#3776AB',
+            'JavaScript': '#F7DF1E',
+            'Java': '#007396',
+            'C++': '#00599C',
+            'Go': '#00ADD8',
+            'Rust': '#DEA584',
+            'Plain Text': '#8b949e'
+        };
+
+        const commentCharMap = {
+            'Python': '#',
+            'JavaScript': '//',
+            'Java': '//',
+            'C++': '//',
+            'Go': '//',
+            'Rust': '//',
+            'Plain Text': ''
+        };
+
+        // Example code snippets with bugs for each language
+        const exampleCodes = {
+            'Python': `def calculate_average(numbers):
+    total = 0
+    count = 0
+    for num in numbers:
+        total += num
+        count += 1
+    if count = 0:
+        return 0
+    return total / count
+
+my_numbers = [1, 2, 3, 4, 5]
+avg = calculate_average(my_numbers)
+print("Average:", avg)
+`,
+            'JavaScript': `function findMax(arr) {
+    let max = arr[0];
+    for (let i = 1; i <= arr.length; i++) {
+        if (arr[i] > max) {
+            max = arr[i];
+        }
+    }
+    return max;
+}
+
+const numbers = [3, 5, 1, 8, 2];
+console.log("Max number is:", findMax(numbers));
+`,
+            'Java': `public class Main {
+    public static void main(String[] args) {
+        String str = null;
+        if (str.equals("hello")) {
+            System.out.println("String matches hello!");
+        } else {
+            System.out.println("String is not hello.");
+        }
+    }
+}
+`,
+            'C++': `#include <iostream>
+#include <vector>
+
+int main() {
+    std::vector<int>* ptr = nullptr;
+    ptr->push_back(10);
+    std::cout << "Value added successfully!" << std::endl;
+    return 0;
+}
+`,
+            'Go': `package main
+
+import "fmt"
+
+func main() {
+    m := make(map[string]int)
+    m["one"] = 1
+    
+    var ptr *int
+    fmt.Println("Value at pointer:", *ptr)
+}
+`,
+            'Rust': `fn main() {
+    let mut vec = vec![1, 2, 3];
+    for x in &vec {
+        if *x == 2 {
+            vec.push(4);
+        }
+    }
+}
+`,
+            'Plain Text': `This is a sample plain text file.
+You can write anything here, or load a code file.
+Bug Hunter can inspect text or other languages too!
+`
+        };
+
+        let currentLanguage = languageNameMap[langParam.toLowerCase()] || 'Python';
+        let currentLangColor = languageColorMap[currentLanguage] || '#58a6ff';
+
+        // Gutter line numbers logic
+        function updateLineNumbers() {
+            let code = codeInput.value;
+            if (!code) {
+                code = codeInput.getAttribute('placeholder') || '';
+            }
+            const linesCount = code.split(/\r\n|\r|\n/).length;
+            const numbers = Array.from({ length: linesCount }, (_, i) => i + 1).join('\n');
+            lineNumbers.textContent = numbers;
+        }
+
+        // Sync scroll position
+        codeInput.addEventListener('scroll', () => {
+            lineNumbers.scrollTop = codeInput.scrollTop;
+        });
+
+        // Sync numbers on textarea input
+        codeInput.addEventListener('input', updateLineNumbers);
+
+        // Function to update the language state, URL, colors, and title dynamically
+        function setLanguage(newLang) {
+            currentLanguage = newLang;
+            currentLangColor = languageColorMap[currentLanguage] || '#58a6ff';
+
+            // Apply branding color dynamically to CSS accent color variable
+            document.documentElement.style.setProperty('--accent-blue', currentLangColor);
+
+            // Update dropdown selection if it exists
+            if (languageSelect) {
+                languageSelect.value = currentLanguage;
+            }
+
+            // Sync txt-language-select if it is visible and not set to Plain Text
+            if (txtLanguageSelect && currentLanguage !== 'Plain Text') {
+                txtLanguageSelect.value = currentLanguage;
+            }
+
+            // Update UI titles based on selected language
+            document.title = `Bug Hunter - ${currentLanguage} Code Debugger`;
+            document.getElementById('header-subtitle').textContent = `${currentLanguage} Debugger`;
+            document.getElementById('source-code-title').innerHTML = `<i data-lucide="terminal" size="16"></i> ${currentLanguage} Source Code`;
+
+            // Update URL parameter without reloading
+            const url = new URL(window.location.href);
+            url.searchParams.set('lang', currentLanguage.toLowerCase());
+            window.history.replaceState({}, '', url);
+
+            // Wrap example code with instructions for the first and last line
+            const rawExample = exampleCodes[currentLanguage] || exampleCodes['Python'];
+            const commentChar = commentCharMap[currentLanguage] !== undefined ? commentCharMap[currentLanguage] : '#';
+            let placeholderCode = "";
+            if (commentChar) {
+                placeholderCode = `${commentChar} _________example________\n${rawExample.trim()}\n${commentChar} ________click find bug____`;
+            } else {
+                placeholderCode = `_________example________\n${rawExample.trim()}\n________click find bug____`;
+            }
+            codeInput.setAttribute('placeholder', placeholderCode);
+
+            // Update line numbers to match placeholder length if empty
+            updateLineNumbers();
+
+            // Re-render dynamic Lucide icons
+            lucide.createIcons();
+        }
+
+        // Initialize language
+        setLanguage(currentLanguage);
+
+        let currentFixedCode = "";
+
+        // Event listeners
+        btnClear.addEventListener('click', () => {
+            codeInput.value = '';
+            fileUpload.value = ''; // Reset file input
+            fileNameDisplay.textContent = '';
+            fileNameDisplay.style.display = 'none';
+            if (txtLanguageSelect) txtLanguageSelect.style.display = 'none';
+            if (detectedLangDisplay) detectedLangDisplay.style.display = 'none';
+            updateLineNumbers();
+            resetResults();
+            hideError();
+        });
+
+        // Language dropdown selector event listener
+        if (languageSelect) {
+            languageSelect.addEventListener('change', (e) => {
+                setLanguage(e.target.value);
+            });
+        }
+
+        // Txt language dropdown event listener
+        if (txtLanguageSelect) {
+            txtLanguageSelect.addEventListener('change', (e) => {
+                setLanguage(e.target.value);
+            });
+        }
+
+        // File upload actions
+        btnUpload.addEventListener('click', () => {
+            fileUpload.click();
+        });
+
+        function handleFileUpload(file) {
+            if (!file) return;
+
+            const fileName = file.name;
+            const ext = fileName.split('.').pop().toLowerCase();
+
+            // Supported extensions
+            const supportedExtensions = ['py', 'java', 'js', 'cpp', 'cxx', 'cc', 'go', 'rs', 'txt'];
+            if (!supportedExtensions.includes(ext)) {
+                showError("Unsupported file type. Please upload a file with one of the following extensions: .py, .java, .js, .cpp, .cxx, .cc, .go, .rs, .txt");
+                return;
+            }
+
+            // Extension to language mapping
+            const extMap = {
+                'py': 'Python',
+                'java': 'Java',
+                'js': 'JavaScript',
+                'cpp': 'C++',
+                'cxx': 'C++',
+                'cc': 'C++',
+                'go': 'Go',
+                'rs': 'Rust',
+                'txt': 'Plain Text'
+            };
+
+            const detectedLang = extMap[ext] || 'Plain Text';
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // Set content and line numbers
+                codeInput.value = e.target.result;
+                updateLineNumbers();
+
+                // Display file name
+                fileNameDisplay.textContent = fileName;
+                fileNameDisplay.style.display = 'inline-block';
+
+                if (ext === 'txt') {
+                    // Show language dropdown selection next to info, hide text indicator
+                    if (txtLanguageSelect) {
+                        txtLanguageSelect.style.display = 'inline-block';
+                        
+                        let initialTxtLang = currentLanguage;
+                        if (initialTxtLang === 'Plain Text') {
+                            initialTxtLang = 'Python'; // Default fallback
+                        }
+                        txtLanguageSelect.value = initialTxtLang;
+                        setLanguage(initialTxtLang);
+                    }
+                    if (detectedLangDisplay) {
+                        detectedLangDisplay.style.display = 'none';
+                    }
+                } else {
+                    // Hide language dropdown selection, show text indicator
+                    if (txtLanguageSelect) {
+                        txtLanguageSelect.style.display = 'none';
+                    }
+                    if (detectedLangDisplay) {
+                        detectedLangDisplay.textContent = `(${detectedLang})`;
+                        detectedLangDisplay.style.display = 'inline-block';
+                    }
+                    // Set language state dynamically
+                    setLanguage(detectedLang);
+                }
+
+                hideError();
+            };
+
+            reader.onerror = function() {
+                showError("An error occurred while reading the file.");
+            };
+
+            reader.readAsText(file);
+        }
+
+        fileUpload.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileUpload(e.target.files[0]);
+            }
+        });
+
+        // Drag and drop event handling
+        const editorContainer = document.querySelector('.editor-container');
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            editorContainer.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                editorContainer.classList.add('drag-active');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            editorContainer.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                editorContainer.classList.remove('drag-active');
+            }, false);
+        });
+
+        editorContainer.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files && files.length > 0) {
+                handleFileUpload(files[0]);
+            }
+        });
+
+        btnFind.addEventListener('click', runAnalysis);
+
+        btnApply.addEventListener('click', () => {
+            if (currentFixedCode) {
+                codeInput.value = currentFixedCode;
+                updateLineNumbers();
+                resetResults();
+            }
+        });
+
+        btnReject.addEventListener('click', () => {
+            resetResults();
+        });
+
+        btnDownload.addEventListener('click', () => {
+            if (currentFixedCode) {
+                const extensions = {
+                    'python': 'py',
+                    'javascript': 'js',
+                    'java': 'java',
+                    'cpp': 'cpp',
+                    'go': 'go',
+                    'rust': 'rs'
+                };
+                const ext = extensions[langParam.toLowerCase()] || 'txt';
+                const blob = new Blob([currentFixedCode], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `fixed_code.${ext}`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+        });
+        // Drag Splitter Event Listeners
+        let isDragging = false;
+
+        splitter.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            splitter.classList.add('dragging');
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            
+            const containerWidth = mainContainer.clientWidth;
+            const containerOffsetLeft = mainContainer.getBoundingClientRect().left;
+            
+            let newWidthPercent = ((e.clientX - containerOffsetLeft) / containerWidth) * 100;
+            
+            // Constrain editor width between 20% and 80%
+            newWidthPercent = Math.max(20, Math.min(80, newWidthPercent));
+            
+            editorPane.style.width = `${newWidthPercent}%`;
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                splitter.classList.remove('dragging');
+                document.body.style.cursor = 'default';
+                document.body.style.userSelect = 'auto';
+            }
+        });
+
+        // Independent Scrolling for Diff Panes (Scroll synchronization removed as requested)
+
+        // Support Tab indent key in textarea
+        codeInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = this.selectionStart;
+                const end = this.selectionEnd;
+                this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
+                this.selectionStart = this.selectionEnd = start + 4;
+            }
+        });
+
+        function resetResults() {
+            emptyState.style.display = 'flex';
+            loader.style.display = 'none';
+            resultsContent.style.display = 'none';
+            
+            // Reset metrics summary
+            document.getElementById('time-complexity-value').textContent = 'N/A';
+            document.getElementById('space-complexity-value').textContent = 'N/A';
+
+            // Reset comparison and footer
+            currentFixedCode = "";
+            groupComparison.style.display = 'none';
+            actionsFooter.style.display = 'none';
+            diffOriginal.innerHTML = '';
+            diffFixed.innerHTML = '';
+        }
+
+        function showError(msg, isSandboxError = false) {
+            let friendlyMsg = msg;
+            if (msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('Quota exceeded') || msg.includes('quota')) {
+                friendlyMsg = 'Rate Limit Reached (429). The Google Gemini free tier limits requests per minute. Please wait 30-60 seconds and click "Find Bugs" again.';
+                errorMessage.textContent = friendlyMsg;
+            } else if (isSandboxError) {
+                errorMessage.innerHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem; width: 100%;">
+                        <div>${escapeHtml(msg)}</div>
+                        <div style="margin-top: 0.25rem;">
+                            <button class="btn btn-primary" style="background-color: var(--accent-yellow); border-color: var(--accent-yellow-border); font-size: 0.8rem; padding: 0.3rem 0.6rem; color: #ffffff;" onclick="forceAnalyzeCode()">
+                                <i data-lucide="shield-off" size="14" style="vertical-align: middle; margin-right: 0.25rem;"></i> Ignore &amp; Analyze Anyway
+                            </button>
+                        </div>
+                    </div>
+                `;
+                lucide.createIcons();
+            } else {
+                errorMessage.textContent = friendlyMsg;
+            }
+            errorBanner.style.display = 'flex';
+            loader.style.display = 'none';
+            btnFind.disabled = false;
+        }
+
+        function hideError() {
+            errorBanner.style.display = 'none';
+            errorMessage.textContent = '';
+        }
+
+        async function forceAnalyzeCode() {
+            await runAnalysis(true);
+        }
+
+        async function runAnalysis(forceSkipSandbox = false) {
+            let code = codeInput.value.strip ? codeInput.value.strip() : codeInput.value.trim();
+            if (!code) {
+                // Automatically load the placeholder example code
+                const example = codeInput.getAttribute('placeholder') || '';
+                codeInput.value = example;
+                updateLineNumbers();
+                code = example.trim();
+            }
+
+            hideError();
+            emptyState.style.display = 'none';
+            resultsContent.style.display = 'none';
+            evalContent.style.display = 'none';
+            
+            // Set dynamic language in loader text
+            const loaderTextEl = loader.querySelector('.loader-text');
+            if (loaderTextEl) {
+                loaderTextEl.innerHTML = `Analyzing ${currentLanguage.toLowerCase()} script<span class="loader-dots"></span>`;
+            }
+            
+            loader.style.display = 'flex';
+            btnFind.disabled = true;
+
+            const shouldVerify = !forceSkipSandbox;
+
+            try {
+                const response = await fetch('/debug', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        code: code, 
+                        lang: currentLanguage.toLowerCase(),
+                        skip_sandbox: !shouldVerify 
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    const errMsg = data.error + (data.details ? `: ${data.details}` : '');
+                    const isSandboxError = data.error === "Execution Error / Infinite Loop detected";
+                    showError(errMsg || 'Server responded with an error', isSandboxError);
+                    return;
+                }
+
+                const resultObj = data.result || data;
+                renderResults(resultObj);
+            } catch (error) {
+                showError(error.message || 'An unexpected error occurred.');
+            } finally {
+                btnFind.disabled = false;
+            }
+        }
+
+        function renderResults(data) {
+            // Clear previous lists
+            errorsList.innerHTML = '';
+            warningsList.innerHTML = '';
+            strengthsList.innerHTML = '';
+            recommendationsList.innerHTML = '';
+
+            // Populate complexity metrics
+            document.getElementById('time-complexity-value').textContent = data.time_complexity || 'N/A';
+            document.getElementById('space-complexity-value').textContent = data.space_complexity || 'N/A';
+
+            let hasErrors = false;
+            let hasWarnings = false;
+
+            // 1. Render Errors (Syntax & Logic)
+            const combinedErrors = [...(data.syntax_errors || []), ...(data.logic_errors || [])];
+            if (combinedErrors.length > 0) {
+                hasErrors = true;
+                document.getElementById('group-errors').style.display = 'flex';
+                combinedErrors.forEach((err, idx) => {
+                    const isSyntax = (data.syntax_errors || []).includes(err);
+                    const typeLabel = isSyntax ? 'Syntax Error' : 'Logic Error';
+                    const card = createIssueCard(err, typeLabel, 'error');
+                    errorsList.appendChild(card);
+                });
+            } else {
+                document.getElementById('group-errors').style.display = 'none';
+            }
+
+            // 2. Render Warnings (Performance & Security)
+            const combinedWarnings = [...(data.performance_issues || []), ...(data.security_issues || [])];
+            if (combinedWarnings.length > 0) {
+                hasWarnings = true;
+                document.getElementById('group-warnings').style.display = 'flex';
+                combinedWarnings.forEach((warn) => {
+                    const isPerformance = (data.performance_issues || []).includes(warn);
+                    const typeLabel = isPerformance ? 'Performance Warning' : 'Security Warning';
+                    const card = createIssueCard(warn, typeLabel, 'warning');
+                    warningsList.appendChild(card);
+                });
+            } else {
+                document.getElementById('group-warnings').style.display = 'none';
+            }
+
+            // 3. Render Strengths
+            if (data.strengths && data.strengths.length > 0) {
+                document.getElementById('group-strengths').style.display = 'flex';
+                data.strengths.forEach(strength => {
+                    const li = document.createElement('li');
+                    li.className = 'bullet-item strength';
+                    li.innerHTML = `
+                        <i data-lucide="check-circle-2" size="16"></i>
+                        <span>${escapeHtml(strength)}</span>
+                    `;
+                    strengthsList.appendChild(li);
+                });
+            } else {
+                // Default if empty
+                document.getElementById('group-strengths').style.display = 'none';
+            }
+
+            // 4. Render Recommendations
+            if (data.recommendations && data.recommendations.length > 0) {
+                document.getElementById('group-recommendations').style.display = 'flex';
+                data.recommendations.forEach(rec => {
+                    const li = document.createElement('li');
+                    li.className = 'bullet-item recommendation';
+                    li.innerHTML = `
+                        <i data-lucide="sparkles" size="16"></i>
+                        <span>${escapeHtml(rec)}</span>
+                    `;
+                    recommendationsList.appendChild(li);
+                });
+            } else {
+                document.getElementById('group-recommendations').style.display = 'none';
+            }
+
+            // Fallback for complete empty results
+            if (!hasErrors && !hasWarnings && (!data.strengths || data.strengths.length === 0) && (!data.recommendations || data.recommendations.length === 0)) {
+                showError("The AI generated an empty analysis. Please try submitting again.");
+                return;
+            }
+
+            // Re-trigger Lucide icons for the newly added elements
+            lucide.createIcons();
+            
+            // Re-trigger Prism syntax highlighting on the new fix codeblocks
+            Prism.highlightAll();
+
+            // 5. Render Comparison
+            if (data.fixed_code) {
+                currentFixedCode = data.fixed_code;
+                groupComparison.style.display = 'flex';
+                actionsFooter.style.display = 'flex';
+                renderDiff(codeInput.value, data.fixed_code);
+            } else {
+                groupComparison.style.display = 'none';
+                actionsFooter.style.display = 'none';
+            }
+
+            // Transition views
+            loader.style.display = 'none';
+            resultsContent.style.display = 'flex';
+        }
+
+        function getPrismLanguage() {
+            const lang = currentLanguage.toLowerCase();
+            if (lang === 'c++') return 'cpp';
+            if (lang === 'plain text' || lang === 'plaintext') return 'plaintext';
+            return lang;
+        }
+
+        function createIssueCard(issue, typeLabel, category) {
+            const card = document.createElement('div');
+            card.className = `issue-card ${category}-card`;
+            
+            const lineBadge = issue.line ? `<span class="badge badge-line">Line ${issue.line}</span>` : '';
+            const fixBlock = issue.fix ? `
+                <div class="issue-fix-container">
+                    <div class="issue-fix-header">
+                        <i data-lucide="wrench" size="12"></i> Recommended Fix
+                    </div>
+                    <pre class="issue-fix-code"><code class="language-${getPrismLanguage()}">${escapeHtml(issue.fix)}</code></pre>
+                </div>
+            ` : '';
+
+            card.innerHTML = `
+                <div class="issue-header">
+                    <div class="issue-meta">
+                        <span class="badge badge-${category}">${typeLabel}</span>
+                        ${lineBadge}
+                    </div>
+                </div>
+                <div class="issue-desc">${escapeHtml(issue.description)}</div>
+                ${fixBlock}
+            `;
+            
+            return card;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function renderDiff(oldCode, newCode) {
+            // Handle double-escaped newlines from API responses
+            if (newCode && newCode.includes('\\n') && !newCode.includes('\n')) {
+                newCode = newCode.replace(/\\n/g, '\n').replace(/\\r/g, '\r');
+            }
+            
+            // Normalize and split by any newline format (LF, CR, CRLF)
+            const oldLines = oldCode ? oldCode.split(/\r\n|\r|\n/) : [];
+            const newLines = newCode ? newCode.split(/\r\n|\r|\n/) : [];
+            
+            const n = oldLines.length;
+            const m = newLines.length;
+            
+            // DP table for LCS
+            const dp = Array(n + 1).fill(null).map(() => Array(m + 1).fill(0));
+            for (let i = 1; i <= n; i++) {
+                for (let j = 1; j <= m; j++) {
+                    if (oldLines[i - 1].trim() === newLines[j - 1].trim()) {
+                        dp[i][j] = dp[i - 1][j - 1] + 1;
+                    } else {
+                        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+                    }
+                }
+            }
+            
+            let i = n;
+            let j = m;
+            const alignedDiff = [];
+            
+            while (i > 0 || j > 0) {
+                if (i > 0 && j > 0 && oldLines[i - 1].trim() === newLines[j - 1].trim()) {
+                    alignedDiff.unshift({
+                        leftNum: i,
+                        leftText: oldLines[i - 1],
+                        rightNum: j,
+                        rightText: newLines[j - 1],
+                        type: 'normal'
+                    });
+                    i--;
+                    j--;
+                } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+                    alignedDiff.unshift({
+                        leftNum: '',
+                        leftText: null,
+                        rightNum: j,
+                        rightText: newLines[j - 1],
+                        type: 'added'
+                    });
+                    j--;
+                } else {
+                    alignedDiff.unshift({
+                        leftNum: i,
+                        leftText: oldLines[i - 1],
+                        rightNum: '',
+                        rightText: null,
+                        type: 'removed'
+                    });
+                    i--;
+                }
+            }
+            
+            diffOriginal.innerHTML = '';
+            diffFixed.innerHTML = '';
+            
+            alignedDiff.forEach(row => {
+                const leftDiv = document.createElement('div');
+                const rightDiv = document.createElement('div');
+                
+                if (row.type === 'normal') {
+                    leftDiv.className = 'diff-line line-normal';
+                    leftDiv.innerHTML = `<span class="diff-line-number">${row.leftNum}</span><span class="diff-line-content">${escapeHtml(row.leftText)}</span>`;
+                    
+                    rightDiv.className = 'diff-line line-normal';
+                    rightDiv.innerHTML = `<span class="diff-line-number">${row.rightNum}</span><span class="diff-line-content">${escapeHtml(row.rightText)}</span>`;
+                } else if (row.type === 'removed') {
+                    leftDiv.className = 'diff-line line-removed';
+                    leftDiv.innerHTML = `<span class="diff-line-number">${row.leftNum}</span><span class="diff-line-content">${escapeHtml(row.leftText)}</span>`;
+                    
+                    rightDiv.className = 'diff-line line-empty';
+                    rightDiv.innerHTML = `<span class="diff-line-number"></span><span class="diff-line-content"></span>`;
+                } else if (row.type === 'added') {
+                    leftDiv.className = 'diff-line line-empty';
+                    leftDiv.innerHTML = `<span class="diff-line-number"></span><span class="diff-line-content"></span>`;
+                    
+                    rightDiv.className = 'diff-line line-added';
+                    rightDiv.innerHTML = `<span class="diff-line-number">${row.rightNum}</span><span class="diff-line-content">${escapeHtml(row.rightText)}</span>`;
+                }
+                
+                diffOriginal.appendChild(leftDiv);
+                diffFixed.appendChild(rightDiv);
+            });
+        }
+
+        // Evaluation UI logic
+        const btnEval = document.getElementById('btn-eval');
+        const evalContent = document.getElementById('eval-content');
+        const evalTotalTests = document.getElementById('eval-total-tests');
+        const evalPassedTests = document.getElementById('eval-passed-tests');
+        const evalPassRate = document.getElementById('eval-pass-rate');
+        const evalAvgScore = document.getElementById('eval-avg-score');
+        const evalDetailsList = document.getElementById('eval-details-list');
+
+        btnEval.addEventListener('click', runEvaluationSuite);
+
+        async function runEvaluationSuite() {
+            hideError();
+            emptyState.style.display = 'none';
+            resultsContent.style.display = 'none';
+            evalContent.style.display = 'none';
+            loader.style.display = 'flex';
+            
+            const loaderTextEl = loader.querySelector('.loader-text');
+            const originalLoaderText = loaderTextEl.innerHTML;
+            loaderTextEl.innerHTML = 'Running test suite evaluation (takes about 90s under rate limits)<span class="loader-dots"></span>';
+            
+            btnFind.disabled = true;
+            btnEval.disabled = true;
+
+            try {
+                const response = await fetch('/eval', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Server failed to run evaluation');
+                }
+
+                renderEvaluationResults(data);
+            } catch (error) {
+                showError(error.message || 'Failed to complete evaluation run.');
+            } finally {
+                loader.style.display = 'none';
+                loaderTextEl.innerHTML = originalLoaderText;
+                btnFind.disabled = false;
+                btnEval.disabled = false;
+                // Re-initialize Lucide icons for any dynamically added icons
+                lucide.createIcons();
+            }
+        }
+
+        function renderEvaluationResults(data) {
+            evalTotalTests.textContent = data.summary.total_tests;
+            evalPassedTests.textContent = data.summary.passed_tests + " / " + data.summary.total_tests;
+            evalPassRate.textContent = data.summary.pass_rate + "%";
+            evalAvgScore.textContent = data.summary.average_judge_score + " / 10";
+
+            evalDetailsList.innerHTML = '';
+            
+            data.results.forEach(res => {
+                const card = document.createElement('div');
+                card.className = 'eval-card';
+                
+                const badgeClass = res.passed ? 'badge-success' : 'badge-fail';
+                const badgeText = res.passed ? 'PASS' : 'FAIL';
+                
+                const score = res.judge_evaluation.overall_score !== undefined ? res.judge_evaluation.overall_score : 'N/A';
+                
+                card.innerHTML = `
+                    <div class="eval-card-header">
+                        <span class="eval-card-title">${res.id}: ${res.name} <span style="font-weight: normal; color: var(--text-secondary); margin-left: 0.5rem;">(${res.category})</span></span>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <span class="eval-badge" style="background-color: var(--bg-active); border: 1px solid var(--border-color); color: var(--accent-yellow); font-family: monospace;">Score: ${score}/10</span>
+                            <span class="eval-badge ${badgeClass}">${badgeText}</span>
+                        </div>
+                    </div>
+                    <div class="eval-details">
+                        <p style="margin-bottom: 0.25rem;"><strong>Status:</strong> <code style="background-color: var(--bg-active); padding: 0.1rem 0.3rem; border-radius: 4px;">${res.status}</code></p>
+                        <p style="margin-bottom: 0.25rem;"><strong>Expected Bugs:</strong> ${res.expected_bugs.length > 0 ? res.expected_bugs.join(', ') : '<em>None (Perfect Code)</em>'}</p>
+                        <p style="margin-bottom: 0.5rem;"><strong>Detected Bugs:</strong> ${res.detected_bugs.length > 0 ? res.detected_bugs.join(', ') : '<em>None</em>'}</p>
+                        <p style="border-left: 2px solid var(--border-color); padding-left: 0.5rem; color: var(--text-primary); font-style: italic;">"${res.judge_evaluation.justification}"</p>
+                    </div>
+                `;
+                
+                evalDetailsList.appendChild(card);
+            });
+
+            evalContent.style.display = 'flex';
+        }
+    </script>
+</body>
+</html>

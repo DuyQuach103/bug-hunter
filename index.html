@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bug Hunter - Multi-Language Code Debugger</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-active: #21262d;
+            --border-color: #30363d;
+            --text-primary: #c9d1d9;
+            --text-secondary: #8b949e;
+            --accent-blue: #58a6ff;
+            --shadow: 0 12px 32px rgba(0,0,0,0.6);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(31, 111, 235, 0.08) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(139, 148, 158, 0.03) 0px, transparent 50%);
+        }
+
+        .welcome-container {
+            max-width: 900px;
+            width: 100%;
+            padding: 3rem 2rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2.5rem;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-badge {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            padding: 1rem;
+            border-radius: 16px;
+            color: var(--accent-blue);
+            box-shadow: var(--shadow);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, #e6edf3 30%, #58a6ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 500px;
+            font-weight: 450;
+        }
+
+        /* Language Grid Layout */
+        .language-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .language-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .language-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .lang-card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem 1.5rem;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition);
+        }
+
+        .lang-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background-color: var(--lang-color);
+            opacity: 0.6;
+            transition: var(--transition);
+        }
+
+        /* Language specific colors */
+        .lang-python { --lang-color: #3776AB; }
+        .lang-javascript { --lang-color: #F7DF1E; }
+        .lang-java { --lang-color: #007396; }
+        .lang-cpp { --lang-color: #00599C; }
+        .lang-go { --lang-color: #00ADD8; }
+        .lang-rust { --lang-color: #DEA584; }
+
+        .lang-icon {
+            font-size: 2.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+            filter: grayscale(20%);
+        }
+
+        .lang-name {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            transition: var(--transition);
+        }
+
+        /* Hover states */
+        .lang-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--lang-color);
+            background-color: var(--bg-active);
+            box-shadow: 0 8px 24px var(--shadow-color);
+        }
+
+        .lang-card:hover::before {
+            opacity: 1;
+            height: 6px;
+        }
+
+        .lang-card:hover .lang-icon {
+            transform: scale(1.15);
+            filter: grayscale(0%);
+        }
+
+        .lang-card:hover .lang-name {
+            color: #ffffff;
+        }
+
+        /* Shadow glow variables */
+        .lang-python:hover { --shadow-color: rgba(55, 118, 171, 0.15); }
+        .lang-javascript:hover { --shadow-color: rgba(247, 223, 30, 0.1); }
+        .lang-java:hover { --shadow-color: rgba(0, 115, 150, 0.15); }
+        .lang-cpp:hover { --shadow-color: rgba(0, 89, 156, 0.15); }
+        .lang-go:hover { --shadow-color: rgba(0, 173, 216, 0.15); }
+        .lang-rust:hover { --shadow-color: rgba(222, 165, 132, 0.15); }
+
+        footer {
+            margin-top: 3rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        footer svg {
+            color: var(--accent-blue);
+        }
+
+        #starfield {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            background-color: #0d1117;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="starfield"></canvas>
+
+    <div class="welcome-container">
+        <header>
+            <div class="logo-badge">
+                <i data-lucide="bug" size="36"></i>
+            </div>
+            <h1>Welcome to Bug Hunter</h1>
+            <p class="subtitle">Select a programming language to start scanning, debugging, and optimizing your code with AI.</p>
+        </header>
+
+        <div class="language-grid">
+            <a href="/debug?lang=python" class="lang-card lang-python">
+                <div class="lang-icon">🐍</div>
+                <div class="lang-name">Python</div>
+            </a>
+            
+            <a href="/debug?lang=javascript" class="lang-card lang-javascript">
+                <div class="lang-icon">🟨</div>
+                <div class="lang-name">JavaScript</div>
+            </a>
+
+            <a href="/debug?lang=java" class="lang-card lang-java">
+                <div class="lang-icon">☕</div>
+                <div class="lang-name">Java</div>
+            </a>
+
+            <a href="/debug?lang=cpp" class="lang-card lang-cpp">
+                <div class="lang-icon">🔵</div>
+                <div class="lang-name">C++</div>
+            </a>
+
+            <a href="/debug?lang=go" class="lang-card lang-go">
+                <div class="lang-icon">🐹</div>
+                <div class="lang-name">Go</div>
+            </a>
+
+            <a href="/debug?lang=rust" class="lang-card lang-rust">
+                <div class="lang-icon">🦀</div>
+                <div class="lang-name">Rust</div>
+            </a>
+        </div>
+
+        <footer>
+            Powered by Google Gemini API
+        </footer>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Starfield Animation
+        (function() {
+            const canvas = document.getElementById('starfield');
+            const ctx = canvas.getContext('2d');
+            
+            let width = canvas.width = window.innerWidth;
+            let height = canvas.height = window.innerHeight;
+            
+            window.addEventListener('resize', () => {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            });
+            
+            class Star {
+                constructor() {
+                    this.reset();
+                    // Pre-populate random locations initially
+                    this.x = Math.random() * width;
+                    this.y = Math.random() * height;
+                }
+                
+                reset() {
+                    this.x = Math.random() * width;
+                    this.y = height + 10;
+                    this.size = Math.random() * 1.2 + 0.4;
+                    this.speed = Math.random() * 0.12 + 0.04;
+                    this.alpha = Math.random() * 0.5 + 0.15;
+                    this.glowSpeed = Math.random() * 0.015 + 0.005;
+                    this.glowDirection = Math.random() > 0.5 ? 1 : -1;
+                    this.color = Math.random() > 0.85 ? 'rgba(88, 166, 255, ' : 'rgba(230, 237, 243, ';
+                }
+                
+                update() {
+                    this.y -= this.speed;
+                    
+                    this.alpha += this.glowSpeed * this.glowDirection;
+                    if (this.alpha >= 0.7) {
+                        this.alpha = 0.7;
+                        this.glowDirection = -1;
+                    } else if (this.alpha <= 0.15) {
+                        this.alpha = 0.15;
+                        this.glowDirection = 1;
+                    }
+                    
+                    if (this.y < -10) {
+                        this.reset();
+                        this.y = height + 10;
+                    }
+                }
+                
+                draw() {
+                    ctx.fillStyle = this.color + this.alpha + ')';
+                    ctx.shadowBlur = this.size > 1.0 ? 3 : 0;
+                    ctx.shadowColor = 'rgba(88, 166, 255, 0.4)';
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            
+            const numStars = 60; // 60 stars is lightweight and has excellent FPS
+            const stars = Array.from({ length: numStars }, () => new Star());
+            
+            function animate() {
+                ctx.fillStyle = '#0d1117';
+                ctx.fillRect(0, 0, width, height);
+                
+                // Background radial gradients for ambient glow
+                const grad1 = ctx.createRadialGradient(width/2, height/2, 10, width/2, height/2, Math.max(width, height));
+                grad1.addColorStop(0, 'rgba(31, 111, 235, 0.05)');
+                grad1.addColorStop(1, 'transparent');
+                ctx.fillStyle = grad1;
+                ctx.fillRect(0, 0, width, height);
+                
+                ctx.shadowBlur = 0;
+                stars.forEach(star => {
+                    star.update();
+                    star.draw();
+                });
+                
+                requestAnimationFrame(animate);
+            }
+            
+            animate();
+        })();
+    </script>
+</body>
+</html>
