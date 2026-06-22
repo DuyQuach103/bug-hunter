@@ -56,6 +56,8 @@
             align-items: center;
             gap: 2.5rem;
             animation: fadeIn 0.6s ease-out;
+            position: relative;
+            z-index: 2;
         }
 
         @keyframes fadeIn {
@@ -415,6 +417,132 @@
                 requestAnimationFrame(tick);
             }
             tick();
+        })();
+    </script>
+
+    <!-- Background Wandering Pixel-Art Characters -->
+    <div id="bg-programmer" style="position: fixed; width: 40px; height: 40px; pointer-events: none; z-index: 1; opacity: 0.3; will-change: transform;">
+        <svg width="40" height="40" viewBox="0 0 8 8" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">
+            <!-- Blue Cap -->
+            <rect x="2" y="0" width="4" height="2" fill="#58a6ff" />
+            <rect x="1" y="1" width="6" height="1" fill="#1f6feb" />
+            <!-- Face / Skin -->
+            <rect x="2" y="2" width="4" height="3" fill="#ffdbac" />
+            <!-- Brown Hair -->
+            <rect x="1" y="2" width="1" height="2" fill="#8b5a2b" />
+            <!-- Glasses -->
+            <rect x="3" y="3" width="3" height="1" fill="#000000" />
+            <rect x="4" y="3" width="1" height="1" fill="#ffffff" />
+            <!-- Shirt -->
+            <rect x="2" y="5" width="4" height="2" fill="#161b22" stroke="#30363d" stroke-width="0.5" />
+            <!-- Hand holding racket -->
+            <rect x="6" y="4" width="1" height="1" fill="#ffdbac" />
+            <!-- Racket shaft -->
+            <rect x="6" y="3" width="1" height="1" fill="#8b949e" />
+            <!-- Racket frame -->
+            <rect x="5" y="1" width="3" height="2" fill="none" stroke="#58a6ff" stroke-width="0.5" />
+            <!-- Pants -->
+            <rect x="2" y="7" width="1" height="1" fill="#8b949e" />
+            <rect x="5" y="7" width="1" height="1" fill="#8b949e" />
+        </svg>
+    </div>
+
+    <div id="bg-bug" style="position: fixed; width: 20px; height: 20px; pointer-events: none; z-index: 1; opacity: 0.3; will-change: transform;">
+        <svg width="20" height="20" viewBox="0 0 8 8" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">
+            <!-- Legs -->
+            <rect x="0" y="2" width="8" height="1" fill="#8b949e" />
+            <rect x="0" y="4" width="8" height="1" fill="#8b949e" />
+            <rect x="0" y="6" width="8" height="1" fill="#8b949e" />
+            <!-- Body -->
+            <rect x="2" y="1" width="4" height="6" fill="#347d39" />
+            <!-- Gold details -->
+            <rect x="3" y="2" width="2" height="4" fill="#d4af37" />
+            <!-- Head -->
+            <rect x="3" y="0" width="2" height="1" fill="#1b4d3e" />
+            <!-- Red eyes -->
+            <rect x="2" y="0" width="1" height="1" fill="#f85149" />
+            <rect x="5" y="0" width="1" height="1" fill="#f85149" />
+        </svg>
+    </div>
+
+    <script>
+        (function() {
+            const pEl = document.getElementById('bg-programmer');
+            const bEl = document.getElementById('bg-bug');
+            
+            let w = window.innerWidth;
+            let h = window.innerHeight;
+            
+            window.addEventListener('resize', () => {
+                w = window.innerWidth;
+                h = window.innerHeight;
+            });
+            
+            // Bug positions and initial velocities
+            let bx = Math.random() * (w - 100) + 50;
+            let by = Math.random() * (h - 100) + 50;
+            let bvx = (Math.random() - 0.5) * 1.5;
+            let bvy = (Math.random() - 0.5) * 1.5;
+            
+            // Programmer position (starts separated)
+            let px = bx - 120;
+            let py = by - 120;
+            
+            const bugSpeedLimit = 1.3;
+            const progSpeed = 0.025; // Slow tracking chase delay
+            
+            let targetTimer = 0;
+            
+            function animateBG() {
+                // 1. Move Bug (Random walk + boundary bouncing)
+                bx += bvx;
+                by += bvy;
+                
+                // Screen boundary bouncing
+                if (bx < 20) { bx = 20; bvx = Math.abs(bvx); }
+                if (bx > w - 20) { bx = w - 20; bvx = -Math.abs(bvx); }
+                if (by < 20) { by = 20; bvy = Math.abs(bvy); }
+                if (by > h - 20) { by = h - 20; bvy = -Math.abs(bvy); }
+                
+                // Periodic velocity change (wandering paths)
+                targetTimer++;
+                if (targetTimer > 100) {
+                    targetTimer = 0;
+                    bvx += (Math.random() - 0.5) * 0.8;
+                    bvy += (Math.random() - 0.5) * 0.8;
+                    
+                    const speed = Math.sqrt(bvx * bvx + bvy * bvy);
+                    if (speed > bugSpeedLimit) {
+                        bvx = (bvx / speed) * bugSpeedLimit;
+                        bvy = (bvy / speed) * bugSpeedLimit;
+                    }
+                }
+                
+                // Sudden sudden bug "dodges" (1% chance per frame)
+                if (Math.random() < 0.01) {
+                    bvx = (Math.random() - 0.5) * 2.5;
+                    bvy = (Math.random() - 0.5) * 2.5;
+                }
+                
+                // 2. Move Programmer (Pursues the bug with a delay)
+                const dx = bx - px;
+                const dy = by - py;
+                
+                px += dx * progSpeed;
+                py += dy * progSpeed;
+                
+                // 3. Flip characters to face their movement direction
+                const bFlip = bvx < 0 ? -1 : 1;
+                const pFlip = dx < 0 ? -1 : 1;
+                
+                // 4. Update elements
+                bEl.style.transform = `translate3d(${bx}px, ${by}px, 0) scaleX(${bFlip})`;
+                pEl.style.transform = `translate3d(${px}px, ${py}px, 0) scaleX(${pFlip})`;
+                
+                requestAnimationFrame(animateBG);
+            }
+            
+            animateBG();
         })();
     </script>
 </body>
