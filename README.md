@@ -109,3 +109,48 @@ python server.py
 
 The application will start, and the web interface will be available at:
 **[http://127.0.0.1:5001](http://127.0.0.1:5001)**
+
+---
+
+## 🤖 Model Context Protocol (MCP) Support
+
+Bug Hunter includes a built-in MCP server that implements the **Model Context Protocol (MCP)**, allowing any compatible AI client (such as Claude Desktop, Cursor, or VS Code) to call Bug Hunter's debugging and language detection capabilities as local tools.
+
+### 1. Exposed MCP Tools
+*   `debug_code(code: str, lang: str = "python")`: Debugs code for errors, warnings, strengths, recommendations, and complexity metrics. Passes input through the same security policy server and execution sandbox checks as the web interface.
+*   `detect_language(code: str)`: Scans code signatures (keywords, symbols, syntax patterns) to auto-detect the programming language (Python, Java, JS, C++, Go, or Rust).
+
+### 2. Claude Desktop Integration
+To configure Claude Desktop to use Bug Hunter as an MCP server, add it to your configuration file:
+
+*   **macOS Path:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+*   **Windows Path:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+Add the following config (update the absolute paths to match your local project environment):
+```json
+{
+  "mcpServers": {
+    "bug-hunter": {
+      "command": "/Users/duyquach/Downloads/COMPUTER SCIENCE/agy2-projects/capstone-project/bug-hunter/.venv/bin/python",
+      "args": [
+        "/Users/duyquach/Downloads/COMPUTER SCIENCE/agy2-projects/capstone-project/bug-hunter/mcp_server.py"
+      ],
+      "env": {
+        "BUG_HUNTER_URL": "http://127.0.0.1:5001/debug"
+      }
+    }
+  }
+}
+```
+
+### 3. Local Testing and Development
+You can test the MCP server locally using the MCP CLI developer tools:
+```bash
+# Run server directly (Stdio transport)
+.venv/bin/python mcp_server.py
+
+# Alternatively, run with hot-reloading dev inspector
+.venv/bin/mcp dev mcp_server.py
+```
+*(Make sure the main Flask web server `python server.py` is running on port 5001 when testing the `debug_code` tool.)*
+
