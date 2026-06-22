@@ -147,6 +147,13 @@ def analyze_code():
     
     Additionally, estimate the overall Time Complexity (in Big O notation), Space Complexity (in Big O notation), rate the overall code quality from 1 to 10, and provide the complete fully corrected version of the code in the 'fixed_code' field.
     
+    CRITICAL Complexity Analysis Guidelines:
+    - You must pay extremely close attention to the cost of built-in collection operations.
+    - Inside loops, operations like list/array membership tests (e.g. `x in list` in Python, `indexOf` or `includes` in JavaScript/Java/Go lists, `std::find` in C++ vectors) are NOT O(1); they are O(k) where k is the size of the collection.
+    - If a loop of O(n) contains an O(n) membership check (like searching in an unsorted list), the loop's overall complexity is O(n^2).
+    - If nested loops of O(n^2) contain an O(n) membership check (e.g. `arr[i] not in duplicates` where `duplicates` can grow up to O(n) elements), the overall time complexity is O(n^3), NOT O(n^2).
+    - Always analyze the actual worst-case size of containers and loop iteration boundaries to derive the true Big O time and space complexities.
+    
     Formatting rules for the 'fixed_code' field:
     1. Do NOT put long docstrings or inline explanations inside the code itself, as it makes the code look messy.
     2. If there are complex or tricky lines of code, write a very short inline comment (using '{comment_char}') right above or next to that specific line.
