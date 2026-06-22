@@ -2120,5 +2120,55 @@ Bug Hunter can inspect text or other languages too!
             evalContent.style.display = 'flex';
         }
     </script>
+
+    <!-- Chasing Bug Cursor Feature -->
+    <div class="chasing-bug" id="chasing-bug" style="position: fixed; top: 0; left: 0; width: 24px; height: 24px; pointer-events: none; z-index: 9999; transform: translate(-50%, -50%); will-change: transform; transition: opacity 0.3s ease; opacity: 0; display: flex; align-items: center; justify-content: center;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bug" style="filter: drop-shadow(0 0 3px rgba(88,166,255,0.4));"><path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-4.97 0-9-4.03-9-9 0-4.02 3.24-7.3 7.29-7.97Q11 3 12 3q1 0 1.71.03C17.76 3.7 21 6.98 21 11c0 4.97-4.03 9-9 9Z"/><path d="M12 9v11"/><path d="M18.39 8.81 21.6 7"/><path d="M21 11h-3"/><path d="M18.39 13.19 21.6 15"/><path d="M5.61 8.81 2.4 7"/><path d="M3 11h3"/><path d="M5.61 13.19 2.4 15"/></svg>
+    </div>
+    
+    <script>
+        (function() {
+            const bug = document.getElementById('chasing-bug');
+            let mouseX = 0, mouseY = 0;
+            let bugX = 0, bugY = 0;
+            let hasMoved = false;
+            
+            // Chasing speed (0.08 is smooth and creates a nice trailing lag)
+            const speed = 0.08;
+            
+            window.addEventListener('mousemove', (e) => {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+                
+                if (!hasMoved) {
+                    // Position immediately on first move to prevent bug flying from top-left (0,0)
+                    bugX = mouseX;
+                    bugY = mouseY;
+                    bug.style.opacity = '1';
+                    hasMoved = true;
+                }
+            });
+            
+            function tick() {
+                if (hasMoved) {
+                    const dx = mouseX - bugX;
+                    const dy = mouseY - bugY;
+                    
+                    bugX += dx * speed;
+                    bugY += dy * speed;
+                    
+                    // Rotate bug to face the target coordinates (offset 90deg since SVG points up)
+                    let angle = 0;
+                    if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+                        angle = (Math.atan2(dy, dx) * 180 / Math.PI) + 90;
+                    }
+                    
+                    bug.style.transform = `translate3d(${bugX}px, ${bugY}px, 0) rotate(${angle}deg)`;
+                }
+                requestAnimationFrame(tick);
+            }
+            tick();
+        })();
+    </script>
 </body>
 </html>
